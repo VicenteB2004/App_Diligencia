@@ -41,7 +41,7 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBhxNKhmZ-xPAIXVbMuCTtsKyG4qMyXGR0',
+    apiKey: '"Colocar Api Key"',
     appId: '1:578243094632:web:4a0aa6dc09f912a8ed33dd',
     messagingSenderId: '578243094632',
     projectId: 'app-notificador-74afb',
@@ -51,7 +51,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCHlQCaIPBmNIbg0g0qHZQ4gCdDorThzhY',
+    apiKey: '"Colocar Api Key"',
     appId: '1:578243094632:android:975f871a8fc42a8ded33dd',
     messagingSenderId: '578243094632',
     projectId: 'app-notificador-74afb',
@@ -59,7 +59,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAMJeotrf19LmbRPoPqiBYmw7eEr1hC0mk',
+    apiKey: 'Colocar Api Key',
     appId: '1:578243094632:ios:cc2faca16074e61aed33dd',
     messagingSenderId: '578243094632',
     projectId: 'app-notificador-74afb',
@@ -68,7 +68,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyAMJeotrf19LmbRPoPqiBYmw7eEr1hC0mk',
+    apiKey: 'Colocar Api Key',
     appId: '1:578243094632:ios:cc2faca16074e61aed33dd',
     messagingSenderId: '578243094632',
     projectId: 'app-notificador-74afb',
@@ -77,7 +77,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyBhxNKhmZ-xPAIXVbMuCTtsKyG4qMyXGR0',
+    apiKey: '"Colocar Api Key"',
     appId: '1:578243094632:web:e99c81fd1b5aed02ed33dd',
     messagingSenderId: '578243094632',
     projectId: 'app-notificador-74afb',

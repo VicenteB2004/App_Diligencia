@@ -59,7 +59,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'Colocar Api Key',
+    apiKey: '"Colocar Api Key"',
     appId: '1:578243094632:ios:cc2faca16074e61aed33dd',
     messagingSenderId: '578243094632',
     projectId: 'app-notificador-74afb',
@@ -68,7 +68,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'Colocar Api Key',
+    apiKey: '"Colocar Api Key"',
     appId: '1:578243094632:ios:cc2faca16074e61aed33dd',
     messagingSenderId: '578243094632',
     projectId: 'app-notificador-74afb',

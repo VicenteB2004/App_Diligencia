@@ -1,0 +1,2 @@
+enum RolApp { abogado, notificador }
+

@@ -1,0 +1,339 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userDocPath(uid) {
+      return /databases/$(database)/documents/usuarios/$(uid);
+    }
+
+    function myUserExists() {
+      return signedIn() && exists(userDocPath(request.auth.uid));
+    }
+
+    function myUser() {
+      return get(userDocPath(request.auth.uid)).data;
+    }
+
+    function myRole() {
+      return myUserExists() && myUser().rol is string ? myUser().rol : '';
+    }
+
+    function dataGroupId(data) {
+      return data.groupId is string && data.groupId.size() > 0
+        ? data.groupId
+        : (
+            data.grupo_id is string && data.grupo_id.size() > 0
+              ? data.grupo_id
+              : (data.group_id is string && data.group_id.size() > 0 ? data.group_id : '')
+          );
+    }
+
+    function myGroupId() {
+      return myUserExists() ? dataGroupId(myUser()) : '';
+    }
+
+    function isAbogado() {
+      return myRole() is string
+        && myRole().matches('^\\s*[Aa][Bb][Oo][Gg][Aa][Dd][Oo]\\s*$');
+    }
+
+    function isNotificador() {
+      return myRole() is string
+        && myRole().matches('^\\s*[Nn][Oo][Tt][Ii][Ff][Ii][Cc][Aa][Dd][Oo][Rr]\\s*$');
+    }
+
+    function invitacionPath(code) {
+      return /databases/$(database)/documents/invitaciones_grupo/$(code);
+    }
+
+    function invitacionValidaParaJoin(code) {
+      return exists(invitacionPath(code))
+        && get(invitacionPath(code)).data.activo == true
+        && get(invitacionPath(code)).data.groupId is string
+        && get(invitacionPath(code)).data.groupId.size() > 0
+        && get(invitacionPath(code)).data.expiresAt is timestamp
+        && request.time < get(invitacionPath(code)).data.expiresAt;
+    }
+
+    match /usuarios/{uid} {
+      allow get: if signedIn() && request.auth.uid == uid;
+
+      allow list: if false;
+
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasAll(['uid', 'email', 'rol', 'groupId', 'grupo_id'])
+        && request.resource.data.keys().hasOnly(['uid', 'email', 'rol', 'groupId', 'grupo_id', 'nombre', 'joinCode'])
+        && request.resource.data.uid == uid
+        && request.resource.data.email is string
+        && request.resource.data.rol in ['abogado', 'notificador']
+        && request.resource.data.groupId is string
+        && request.resource.data.grupo_id is string
+        && request.resource.data.groupId == request.resource.data.grupo_id;
+
+      allow update: if signedIn()
+        && request.auth.uid == uid
+        && (
+          // Abogado puede actualizar su propio perfil
+          isAbogado() ||
+          // Notificador sin grupo puede unirse con codigo de invitacion valido
+          (
+            isNotificador()
+            && request.resource.data.groupId is string
+            && request.resource.data.groupId.size() > 0
+            && request.resource.data.joinCode is string
+            && request.resource.data.joinCode.size() > 0
+            && invitacionValidaParaJoin(request.resource.data.joinCode)
+            && get(invitacionPath(request.resource.data.joinCode)).data.groupId == request.resource.data.groupId
+          )
+        );
+
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasAll(['uid', 'email', 'rol', 'groupId', 'grupo_id'])
+        && request.resource.data.keys().hasOnly(['uid', 'email', 'rol', 'groupId', 'grupo_id', 'nombre', 'joinCode'])
+        && request.resource.data.uid == uid
+        && request.resource.data.email is string
+        && request.resource.data.rol in ['abogado', 'notificador']
+        && request.resource.data.groupId is string
+        && request.resource.data.grupo_id is string
+        && request.resource.data.groupId == request.resource.data.grupo_id
+        && (
+          isAbogado() ||
+          (
+            isNotificador()
+            && request.resource.data.joinCode is string
+            && request.resource.data.joinCode.size() > 0
+            && invitacionValidaParaJoin(request.resource.data.joinCode)
+            && get(invitacionPath(request.resource.data.joinCode)).data.groupId == request.resource.data.groupId
+          )
+        );
+
+      allow delete: if false;
+    }
+
+    match /invitaciones_grupo/{codigo} {
+      allow create: if signedIn()
+        && isAbogado()
+        && myGroupId() != ''
+        && request.resource.data.keys().hasAll([
+          'codigo',
+          'groupId',
+          'creadoPorUid',
+          'creadoAt',
+          'expiresAt',
+          'activo',
+          'usedAt',
+          'usedByUid',
+          'estado'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'codigo',
+          'groupId',
+          'creadoPorUid',
+          'creadoAt',
+          'expiresAt',
+          'activo',
+          'usedAt',
+          'usedByUid',
+          'estado'
+        ])
+        && request.resource.data.codigo == codigo
+        && request.resource.data.groupId == myGroupId()
+        && request.resource.data.creadoPorUid == request.auth.uid
+        && request.resource.data.expiresAt is timestamp
+        && request.resource.data.expiresAt > request.time
+        && request.resource.data.activo == true
+        && request.resource.data.usedAt == null
+        && request.resource.data.usedByUid == null
+        && request.resource.data.estado == 'activa';
+
+      allow get: if signedIn();
+      allow list: if false;
+
+      // Abogado creador puede anular invitacion manualmente.
+      allow update: if signedIn()
+        && isAbogado()
+        && resource.data.creadoPorUid == request.auth.uid
+        && request.resource.data.codigo == resource.data.codigo
+        && request.resource.data.groupId == resource.data.groupId
+        && request.resource.data.creadoPorUid == resource.data.creadoPorUid
+        && request.resource.data.creadoAt == resource.data.creadoAt
+        && request.resource.data.expiresAt == resource.data.expiresAt
+        && request.resource.data.activo is bool;
+
+      // Notificador solo puede consumir una invitacion valida en su propio join.
+      allow update: if signedIn()
+        && isNotificador()
+        && resource.data.codigo == codigo
+        && resource.data.activo == true
+        && resource.data.estado == 'activa'
+        && resource.data.expiresAt is timestamp
+        && request.time < resource.data.expiresAt
+        && request.resource.data.activo == false
+        && request.resource.data.estado == 'consumida'
+        && request.resource.data.usedByUid == request.auth.uid;
+
+      allow delete: if signedIn()
+        && isAbogado()
+        && resource.data.creadoPorUid == request.auth.uid;
+    }
+
+    match /ubicaciones/{docId} {
+      allow get, list: if signedIn()
+        && myGroupId() != ''
+        && resource.data.groupId == myGroupId();
+
+      allow create: if signedIn()
+        && isAbogado()
+        && myGroupId() != ''
+        && request.resource.data.keys().hasAll(['lat', 'lng', 'groupId', 'timestamp'])
+        && request.resource.data.keys().hasOnly([
+          'lat',
+          'lng',
+          'groupId',
+          'timestamp',
+          'ubicacionId',
+          'nombreUbicacion',
+          'identificacionTecnica',
+          'razonSocial',
+          'ruc',
+          'representanteLegal',
+          'nombreNotificador',
+          'cedulaNotificador',
+          'esSegundaNotificacion',
+          'estado'
+        ])
+        && request.resource.data.lat is number
+        && request.resource.data.lng is number
+        && request.resource.data.groupId == myGroupId()
+        && request.resource.data.timestamp is timestamp
+        && (!('ubicacionId' in request.resource.data) || request.resource.data.ubicacionId is number)
+        && (!('nombreUbicacion' in request.resource.data) || request.resource.data.nombreUbicacion is string)
+        && (!('identificacionTecnica' in request.resource.data)
+          || request.resource.data.identificacionTecnica in ['RPV', 'OPI', ''])
+        && (!('razonSocial' in request.resource.data) || request.resource.data.razonSocial is string)
+        && (!('ruc' in request.resource.data) || request.resource.data.ruc is string)
+        && (!('representanteLegal' in request.resource.data) || request.resource.data.representanteLegal is string)
+        && (!('nombreNotificador' in request.resource.data) || request.resource.data.nombreNotificador is string)
+        && (!('cedulaNotificador' in request.resource.data) || request.resource.data.cedulaNotificador is string)
+        && (!('esSegundaNotificacion' in request.resource.data)
+          || request.resource.data.esSegundaNotificacion is bool)
+        && (!('estado' in request.resource.data) || request.resource.data.estado in ['pendiente', 'completada']);
+
+      allow update, delete: if signedIn()
+        && isAbogado()
+        && myGroupId() != ''
+        && resource.data.groupId == myGroupId();
+    }
+
+    match /reportes_notificacion/{docId} {
+      allow get, list: if signedIn()
+        && myGroupId() != ''
+        && resource.data.groupId == myGroupId();
+
+      allow create: if signedIn()
+        && isNotificador()
+        && myGroupId() != ''
+        && request.resource.data.keys().hasAll([
+          'ubicacionId',
+          'groupId',
+          'notificadorUid',
+          'notificadorNombre',
+          'notificadorEmail',
+          'direccion',
+          'lat',
+          'lng',
+          'tipoNotificacion',
+          'personaNotificada',
+          'fechaHora',
+          'createdAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'ubicacionId',
+          'groupId',
+          'notificadorUid',
+          'notificadorNombre',
+          'notificadorEmail',
+          'direccion',
+          'lat',
+          'lng',
+          'tipoNotificacion',
+          'personaNotificada',
+          'observacion',
+          'descripcionDiligencia',
+          'fechaHora',
+          'createdAt',
+          'pdfBytes',
+          'nombreUbicacion',
+          'identificacionTecnica',
+          'nombreFamiliarTrabajador',
+          'cedulaFamiliarTrabajador',
+          'razonSocial',
+          'ruc',
+          'representanteLegal',
+          'cedulaAbogado',
+          'esSegundaNotificacion',
+          'pdfDownloadUrl',
+          'pdfStoragePath'
+        ])
+        && request.resource.data.groupId == myGroupId()
+        && request.resource.data.notificadorUid == request.auth.uid
+        && request.resource.data.ubicacionId is number
+        && request.resource.data.notificadorNombre is string
+        && request.resource.data.notificadorEmail is string
+        && request.resource.data.direccion is string
+        && request.resource.data.lat is number
+        && request.resource.data.lng is number
+        && request.resource.data.tipoNotificacion is string
+        && request.resource.data.personaNotificada is string
+        && (
+          ('pdfBytes' in request.resource.data)
+          || ('pdfDownloadUrl' in request.resource.data)
+          || ('pdfStoragePath' in request.resource.data)
+        )
+        && (
+          (request.resource.data.observacion is string)
+          || (request.resource.data.descripcionDiligencia is string)
+        )
+        && request.resource.data.fechaHora is timestamp
+        && request.resource.data.createdAt is timestamp
+        && (!('pdfDownloadUrl' in request.resource.data)
+          || request.resource.data.pdfDownloadUrl is string)
+        && (!('pdfStoragePath' in request.resource.data)
+          || request.resource.data.pdfStoragePath is string)
+        && (!('nombreUbicacion' in request.resource.data) || request.resource.data.nombreUbicacion is string)
+        && (!('identificacionTecnica' in request.resource.data)
+          || request.resource.data.identificacionTecnica in ['RPV', 'OPI', ''])
+        && (!('nombreFamiliarTrabajador' in request.resource.data)
+          || request.resource.data.nombreFamiliarTrabajador is string)
+        && (!('cedulaFamiliarTrabajador' in request.resource.data)
+          || request.resource.data.cedulaFamiliarTrabajador is string)
+        && (!('razonSocial' in request.resource.data)
+          || request.resource.data.razonSocial is string)
+        && (!('ruc' in request.resource.data)
+          || request.resource.data.ruc is string)
+        && (!('representanteLegal' in request.resource.data)
+          || request.resource.data.representanteLegal is string)
+        && (!('cedulaAbogado' in request.resource.data)
+          || request.resource.data.cedulaAbogado is string)
+        && (!('esSegundaNotificacion' in request.resource.data)
+          || request.resource.data.esSegundaNotificacion is bool);
+
+      allow update: if false;
+
+      allow delete: if signedIn()
+        && isAbogado()
+        && myGroupId() != ''
+        && resource.data.groupId == myGroupId();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

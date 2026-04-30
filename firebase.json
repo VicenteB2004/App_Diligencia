@@ -1,0 +1,28 @@
+{
+  "flutter": {
+	"platforms": {
+	  "android": {
+		"default": {
+		  "projectId": "app-notificador-74afb",
+		  "appId": "1:578243094632:android:975f871a8fc42a8ded33dd",
+		  "fileOutput": "android/app/google-services.json"
+		}
+	  },
+	  "dart": {
+		"lib/firebase_options.dart": {
+		  "projectId": "app-notificador-74afb",
+		  "configurations": {
+			"android": "1:578243094632:android:975f871a8fc42a8ded33dd",
+			"ios": "1:578243094632:ios:cc2faca16074e61aed33dd",
+			"macos": "1:578243094632:ios:cc2faca16074e61aed33dd",
+			"web": "1:578243094632:web:4a0aa6dc09f912a8ed33dd",
+			"windows": "1:578243094632:web:e99c81fd1b5aed02ed33dd"
+		  }
+		}
+	  }
+	}
+  },
+  "firestore": {
+	"rules": "firestore.rules"
+  }
+}

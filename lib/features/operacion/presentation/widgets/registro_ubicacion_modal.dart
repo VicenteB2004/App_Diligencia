@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 class RegistroUbicacionResult {
   const RegistroUbicacionResult({
     required this.nombreUbicacion,
+    required this.referenciaUbicacion,
     required this.identificacionTecnica,
     required this.esSegundaNotificacion,
     required this.razonSocial,
@@ -13,6 +14,7 @@ class RegistroUbicacionResult {
   });
 
   final String nombreUbicacion;
+  final String referenciaUbicacion;
   final String identificacionTecnica;
   final bool esSegundaNotificacion;
   final String razonSocial;
@@ -60,6 +62,7 @@ class _RegistroUbicacionDialogState extends State<_RegistroUbicacionDialog> {
   final TextEditingController _razonSocialCtrl = TextEditingController();
   final TextEditingController _rucCtrl = TextEditingController();
   final TextEditingController _representanteCtrl = TextEditingController();
+  final TextEditingController _referenciaCtrl = TextEditingController();
   final TextEditingController _nombreNotificadorCtrl = TextEditingController();
   final TextEditingController _cedulaNotificadorCtrl = TextEditingController();
 
@@ -69,6 +72,7 @@ class _RegistroUbicacionDialogState extends State<_RegistroUbicacionDialog> {
     _razonSocialCtrl.dispose();
     _rucCtrl.dispose();
     _representanteCtrl.dispose();
+    _referenciaCtrl.dispose();
     _nombreNotificadorCtrl.dispose();
     _cedulaNotificadorCtrl.dispose();
     super.dispose();
@@ -83,10 +87,10 @@ class _RegistroUbicacionDialogState extends State<_RegistroUbicacionDialog> {
       content: SizedBox(
         width: 680,
         child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
             TextField(
               controller: _nombreCtrl,
               decoration: const InputDecoration(
@@ -101,6 +105,17 @@ class _RegistroUbicacionDialogState extends State<_RegistroUbicacionDialog> {
                 style: const TextStyle(fontSize: 12, color: Colors.black54),
               ),
             const SizedBox(height: 14),
+            TextField(
+              controller: _referenciaCtrl,
+              minLines: 1,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: 'Referencia de ubicacion',
+                hintText: 'Ej. junto al parque, frente al banco, color azul',
+                isDense: true,
+              ),
+            ),
+            const SizedBox(height: 10),
             const Text(
               'Identificacion tecnica',
               style: TextStyle(fontWeight: FontWeight.w600),
@@ -206,8 +221,8 @@ class _RegistroUbicacionDialogState extends State<_RegistroUbicacionDialog> {
                 hintText: 'Ej. 0102030405',
               ),
             ),
-          ],
-        ),
+            ],
+          ),
         ),
       ),
       actions: <Widget>[
@@ -224,6 +239,7 @@ class _RegistroUbicacionDialogState extends State<_RegistroUbicacionDialog> {
             Navigator.of(context).pop(
               RegistroUbicacionResult(
                 nombreUbicacion: nombre,
+                referenciaUbicacion: _referenciaCtrl.text.trim(),
                 identificacionTecnica: _identificacion,
                 esSegundaNotificacion: _esSegundaNotificacion,
                 razonSocial: _razonSocialCtrl.text.trim(),

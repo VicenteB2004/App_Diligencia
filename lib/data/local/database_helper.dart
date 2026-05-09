@@ -11,7 +11,7 @@ class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._();
 
   static const String databaseName = 'notificador_local.db';
-  static const int databaseVersion = 7;
+  static const int databaseVersion = 8;
 
   static const String tablaUsuarios = 'usuarios';
   static const String tablaUbicaciones = 'ubicaciones';
@@ -70,6 +70,7 @@ class DatabaseHelper {
         direccion TEXT,
         descripcion TEXT,
         nombre_ubicacion TEXT,
+        referencia_ubicacion TEXT,
         identificacion_tecnica TEXT,
         razon_social TEXT,
         ruc TEXT,
@@ -138,6 +139,12 @@ class DatabaseHelper {
 
     if (oldVersion < 4) {
       await db.execute(
+        'ALTER TABLE $tablaUbicaciones ADD COLUMN referencia_ubicacion TEXT',
+      );
+    }
+
+    if (oldVersion < 5) {
+      await db.execute(
         'ALTER TABLE $tablaUbicaciones ADD COLUMN razon_social TEXT',
       );
       await db.execute(
@@ -151,7 +158,7 @@ class DatabaseHelper {
       );
     }
 
-    if (oldVersion < 5) {
+    if (oldVersion < 6) {
       await db.execute(
         'ALTER TABLE $tablaUbicaciones ADD COLUMN nombre_notificador TEXT',
       );
@@ -160,13 +167,24 @@ class DatabaseHelper {
       );
     }
 
-    if (oldVersion < 6) {
+    if (oldVersion < 7) {
       await db.execute(
         'ALTER TABLE $tablaUsuarios ADD COLUMN group_id TEXT',
       );
     }
 
-    if (oldVersion < 7) {
+    if (oldVersion < 8) {
+      final bool existeReferencia = await _columnaExiste(
+        db,
+        tablaUbicaciones,
+        'referencia_ubicacion',
+      );
+      if (!existeReferencia) {
+        await db.execute(
+          'ALTER TABLE $tablaUbicaciones ADD COLUMN referencia_ubicacion TEXT',
+        );
+      }
+
       final bool existeColumna = await _columnaExiste(
         db,
         tablaUbicaciones,

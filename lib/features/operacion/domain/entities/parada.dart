@@ -5,6 +5,7 @@ class Parada {
     required this.id,
     required this.posicion,
     this.nombreUbicacion,
+    this.referenciaUbicacion,
     this.identificacionTecnica,
     this.esSegundaNotificacion = false,
     this.razonSocial,
@@ -18,6 +19,7 @@ class Parada {
   final int id;
   final LatLng posicion;
   final String? nombreUbicacion;
+  final String? referenciaUbicacion;
   final String? identificacionTecnica;
   final bool esSegundaNotificacion;
   final String? razonSocial;

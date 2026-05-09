@@ -73,6 +73,7 @@ class FirestoreService {
     DateTime? timestamp,
     int? ubicacionId,
     String? nombreUbicacion,
+    String? referenciaUbicacion,
     String? identificacionTecnica,
     String? razonSocial,
     String? ruc,
@@ -97,6 +98,8 @@ class FirestoreService {
           : Timestamp.fromDate(timestamp.toUtc()),
       if (ubicacionId != null) 'ubicacionId': ubicacionId,
       if ((nombreUbicacion ?? '').trim().isNotEmpty) 'nombreUbicacion': nombreUbicacion!.trim(),
+      if ((referenciaUbicacion ?? '').trim().isNotEmpty)
+        'referenciaUbicacion': referenciaUbicacion!.trim(),
       if ((identificacionTecnica ?? '').trim().isNotEmpty)
         'identificacionTecnica': identificacionTecnica!.trim().toUpperCase(),
       if ((razonSocial ?? '').trim().isNotEmpty) 'razonSocial': razonSocial!.trim(),
@@ -335,6 +338,7 @@ class FirestoreService {
     required DateTime fechaHora,
     required Uint8List pdfBytes,
     String? nombreUbicacion,
+    String? referenciaUbicacion,
     String? identificacionTecnica,
     bool esSegundaNotificacion = false,
     String? cedulaAbogado,
@@ -414,6 +418,7 @@ class FirestoreService {
       'tipoNotificacion': tipoNotificacion,
       'personaNotificada': personaNotificada,
       'nombreUbicacion': (nombreUbicacion ?? '').trim(),
+      if ((referenciaUbicacion ?? '').trim().isNotEmpty) 'referenciaUbicacion': referenciaUbicacion!.trim(),
       'identificacionTecnica': (identificacionTecnica ?? '').trim().toUpperCase(),
       if ((cedulaAbogado ?? '').trim().isNotEmpty) 'cedulaAbogado': cedulaAbogado!.trim(),
       if ((nombreFamiliarTrabajador ?? '').trim().isNotEmpty)
@@ -430,6 +435,8 @@ class FirestoreService {
       ...baseData,
       'esSegundaNotificacion': esSegundaNotificacion,
     };
+    final Map<String, dynamic> baseDataLegacy = Map<String, dynamic>.from(baseDataConSegundaNotificacion)
+      ..remove('referenciaUbicacion');
 
     try {
       final DocumentReference<Map<String, dynamic>> ref = await _firestore
@@ -448,7 +455,7 @@ class FirestoreService {
           final DocumentReference<Map<String, dynamic>> ref = await _firestore
               .collection(reportesCollection)
               .add(<String, dynamic>{
-                ...baseData,
+                ...baseDataLegacy,
                 // Reglas antiguas: solo observacion.
                 'observacion': descripcionDiligencia,
               });
@@ -749,7 +756,6 @@ class FirestoreService {
     return output.toList(growable: false);
   }
 
-
   void _validateCoordinates({required double lat, required double lng}) {
     if (lat < -90 || lat > 90) {
       throw const FirestoreServiceException(
@@ -759,6 +765,30 @@ class FirestoreService {
     if (lng < -180 || lng > 180) {
       throw const FirestoreServiceException(
         'Longitud fuera de rango (-180 a 180).',
+      );
+    }
+  }
+
+  Future<void> updateLocationEstado({
+    required String ubicacionDocId,
+    required String estado,
+  }) async {
+    final String normalizedId = ubicacionDocId.trim();
+    if (normalizedId.isEmpty) {
+      throw const FirestoreServiceException('El ID de ubicacion es invalido.');
+    }
+
+    try {
+      await _firestore
+          .collection(ubicacionesCollection)
+          .doc(normalizedId)
+          .update(<String, dynamic>{
+        'estado': estado,
+      });
+    } on FirebaseException catch (e) {
+      throw FirestoreServiceException(
+        e.message ?? 'No fue posible actualizar el estado de la ubicacion.',
+        code: e.code,
       );
     }
   }

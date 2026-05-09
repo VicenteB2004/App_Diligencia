@@ -18,6 +18,7 @@ class NotificationReport {
     required this.personaNotificada,
     required this.descripcionDiligencia,
     required this.nombreUbicacion,
+    this.referenciaUbicacion,
     required this.identificacionTecnica,
     required this.fechaHora,
     required this.createdAt,
@@ -47,6 +48,7 @@ class NotificationReport {
   final String personaNotificada;
   final String descripcionDiligencia;
   final String nombreUbicacion;
+  final String? referenciaUbicacion;
   final String identificacionTecnica;
   final DateTime fechaHora;
   final DateTime createdAt;
@@ -93,6 +95,7 @@ class NotificationReport {
       personaNotificada: (data['personaNotificada'] as String? ?? '').trim(),
       descripcionDiligencia: (data['descripcionDiligencia'] as String? ?? data['observacion'] as String? ?? '').trim(),
       nombreUbicacion: (data['nombreUbicacion'] as String? ?? '').trim(),
+      referenciaUbicacion: (data['referenciaUbicacion'] as String? ?? '').trim(),
       identificacionTecnica: (data['identificacionTecnica'] as String? ?? '').trim(),
       fechaHora: fechaHoraTs?.toDate().toLocal() ?? DateTime.fromMillisecondsSinceEpoch(0),
       createdAt: createdAtTs?.toDate().toLocal() ?? DateTime.fromMillisecondsSinceEpoch(0),

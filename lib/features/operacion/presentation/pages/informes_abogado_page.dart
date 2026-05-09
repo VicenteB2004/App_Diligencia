@@ -386,6 +386,8 @@ class _DetalleInformeContent extends StatelessWidget {
             _linea('Tipo', _capitalize(reporte.tipoNotificacion)),
             _linea('Persona', _capitalize(reporte.personaNotificada)),
             _linea('Identificacion tecnica', reporte.identificacionTecnica),
+            if ((reporte.referenciaUbicacion ?? '').trim().isNotEmpty)
+              _linea('Referencia de ubicacion', reporte.referenciaUbicacion ?? ''),
             _linea('Direccion', reporte.direccion),
             _linea('Coordenadas', '${reporte.lat.toStringAsFixed(6)}, ${reporte.lng.toStringAsFixed(6)}'),
             _linea('Fecha', _formatDateTime(reporte.fechaHora)),

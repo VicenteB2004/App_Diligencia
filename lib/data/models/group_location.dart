@@ -9,6 +9,7 @@ class GroupLocation {
     required this.timestamp,
     this.ubicacionId,
     this.nombreUbicacion,
+    this.referenciaUbicacion,
     this.identificacionTecnica,
     this.esSegundaNotificacion = false,
     this.razonSocial,
@@ -26,6 +27,7 @@ class GroupLocation {
   final DateTime timestamp;
   final int? ubicacionId;
   final String? nombreUbicacion;
+  final String? referenciaUbicacion;
   final String? identificacionTecnica;
   final bool esSegundaNotificacion;
   final String? razonSocial;
@@ -43,6 +45,7 @@ class GroupLocation {
       'timestamp': Timestamp.fromDate(timestamp.toUtc()),
       'ubicacionId': ubicacionId,
       'nombreUbicacion': nombreUbicacion,
+      'referenciaUbicacion': referenciaUbicacion,
       'identificacionTecnica': identificacionTecnica,
       'esSegundaNotificacion': esSegundaNotificacion,
       'razonSocial': razonSocial,
@@ -82,6 +85,7 @@ class GroupLocation {
       timestamp: timestamp,
       ubicacionId: (map['ubicacionId'] as num?)?.toInt(),
       nombreUbicacion: (map['nombreUbicacion'] as String?)?.trim(),
+      referenciaUbicacion: (map['referenciaUbicacion'] as String?)?.trim(),
       identificacionTecnica: (map['identificacionTecnica'] as String?)?.trim(),
       esSegundaNotificacion: _parseBool(map['esSegundaNotificacion'] ?? map['es_segunda_notificacion']),
       razonSocial: (map['razonSocial'] as String?)?.trim(),

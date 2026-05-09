@@ -35,6 +35,7 @@ const String _kStaticMapsApiKey = String.fromEnvironment(
 class RegistroUbicacionData {
   const RegistroUbicacionData({
     required this.nombreUbicacion,
+    required this.referenciaUbicacion,
     required this.identificacionTecnica,
     required this.esSegundaNotificacion,
     required this.razonSocial,
@@ -45,6 +46,7 @@ class RegistroUbicacionData {
   });
 
   final String nombreUbicacion;
+  final String referenciaUbicacion;
   final String identificacionTecnica;
   final bool esSegundaNotificacion;
   final String razonSocial;
@@ -102,6 +104,7 @@ class OperacionController extends ChangeNotifier {
   Future<EncuestaLlegada?> Function({
     required int paradaId,
     required double distanciaMetros,
+    String? referenciaUbicacion,
   })?
   _encuestaLlegadaHandler;
   Future<RegistroUbicacionData?> Function({
@@ -133,6 +136,7 @@ class OperacionController extends ChangeNotifier {
   final Set<int> _ubicacionesCompletadasPorReportes = <int>{};
   final Set<int> _ubicacionesEsperadasPorReportes = <int>{};
   final Map<int, bool> _paradaDentroRadioLlegada = <int, bool>{};
+  final Map<int, String> _firestoreDocIdPorUbicacionId = <int, String>{};
   int? _paradaCanceladaId;
   DateTime? _paradaCanceladaHasta;
 
@@ -189,7 +193,11 @@ class OperacionController extends ChangeNotifier {
   }
 
   void setEncuestaLlegadaHandler(
-    Future<EncuestaLlegada?> Function({required int paradaId, required double distanciaMetros})?
+    Future<EncuestaLlegada?> Function({
+      required int paradaId,
+      required double distanciaMetros,
+      String? referenciaUbicacion,
+    })?
     handler,
   ) {
     _encuestaLlegadaHandler = handler;
@@ -416,6 +424,7 @@ class OperacionController extends ChangeNotifier {
           _polylineReferenciaBusqueda != null ||
           _paradaDentroRadioLlegada.isNotEmpty) {
         _paradas.clear();
+        _firestoreDocIdPorUbicacionId.clear();
         _markersParadas = <Marker>{};
         _rutaIds.clear();
         _polylinesRuta = <Polyline>{};
@@ -427,18 +436,21 @@ class OperacionController extends ChangeNotifier {
       return;
     }
 
+    _firestoreDocIdPorUbicacionId.clear();
     _paradas
       ..clear()
       ..addEntries(
         remotas.map((GroupLocation item) {
           final int id = item.ubicacionId ?? _idEstableDesdeDoc(item.id);
           final String identificacion = (item.identificacionTecnica ?? '').trim().toUpperCase();
+          _firestoreDocIdPorUbicacionId[id] = item.id;
           return MapEntry<int, Parada>(
             id,
             Parada(
               id: id,
               posicion: LatLng(item.lat, item.lng),
               nombreUbicacion: (item.nombreUbicacion ?? '').trim().isEmpty ? 'U-$id' : item.nombreUbicacion,
+              referenciaUbicacion: item.referenciaUbicacion,
               identificacionTecnica: identificacion.isEmpty ? null : identificacion,
               esSegundaNotificacion: item.esSegundaNotificacion,
               razonSocial: item.razonSocial,
@@ -733,6 +745,7 @@ class OperacionController extends ChangeNotifier {
       direccion: direccion,
       descripcion: destinoBusqueda.isEmpty ? 'Punto legal asignado' : 'Punto legal en $destinoBusqueda',
       nombreUbicacion: registro.nombreUbicacion,
+      referenciaUbicacion: registro.referenciaUbicacion,
       identificacionTecnica: registro.identificacionTecnica,
       esSegundaNotificacion: registro.esSegundaNotificacion,
       razonSocial: registro.razonSocial,
@@ -1088,6 +1101,7 @@ class OperacionController extends ChangeNotifier {
                   id: row.id!,
                   posicion: LatLng(row.latitud, row.longitud),
                   nombreUbicacion: row.nombreUbicacion,
+                  referenciaUbicacion: row.referenciaUbicacion,
                   identificacionTecnica: row.identificacionTecnica,
                   esSegundaNotificacion: row.esSegundaNotificacion,
                   razonSocial: row.razonSocial,
@@ -1114,6 +1128,7 @@ class OperacionController extends ChangeNotifier {
     String? direccion,
     String? descripcion,
     String? nombreUbicacion,
+    String? referenciaUbicacion,
     String? identificacionTecnica,
     bool esSegundaNotificacion = false,
     String? razonSocial,
@@ -1134,6 +1149,7 @@ class OperacionController extends ChangeNotifier {
       direccion: direccion,
       descripcion: descripcion ?? 'Punto legal asignado',
       nombreUbicacion: nombreUbicacion,
+      referenciaUbicacion: referenciaUbicacion,
       identificacionTecnica: identificacionTecnica,
       esSegundaNotificacion: esSegundaNotificacion,
       razonSocial: razonSocial,
@@ -1147,6 +1163,7 @@ class OperacionController extends ChangeNotifier {
       id: id,
       posicion: posicion,
       nombreUbicacion: nombreUbicacion,
+      referenciaUbicacion: referenciaUbicacion,
       identificacionTecnica: identificacionTecnica,
       esSegundaNotificacion: esSegundaNotificacion,
       razonSocial: razonSocial,
@@ -1166,6 +1183,7 @@ class OperacionController extends ChangeNotifier {
         timestamp: DateTime.now(),
         ubicacionId: id,
         nombreUbicacion: nombreUbicacion,
+        referenciaUbicacion: referenciaUbicacion,
         identificacionTecnica: identificacionTecnica,
         esSegundaNotificacion: esSegundaNotificacion,
         razonSocial: razonSocial,
@@ -1290,7 +1308,11 @@ class OperacionController extends ChangeNotifier {
           return;
         }
 
-        encuesta = await handler(paradaId: destino.id, distanciaMetros: distancia);
+        encuesta = await handler(
+          paradaId: destino.id,
+          distanciaMetros: distancia,
+          referenciaUbicacion: destino.referenciaUbicacion,
+        );
         if (encuesta == null) {
           _paradaCanceladaId = destino.id;
           _paradaCanceladaHasta = DateTime.now().add(_kCooldownEncuestaCancelada);
@@ -1353,6 +1375,7 @@ class OperacionController extends ChangeNotifier {
           fechaHora: fechaHoraReporte,
           pdfBytes: pdfBytes,
           nombreUbicacion: destino.nombreUbicacion,
+          referenciaUbicacion: destino.referenciaUbicacion,
           identificacionTecnica: destino.identificacionTecnica,
           esSegundaNotificacion: destino.esSegundaNotificacion,
           nombreFamiliarTrabajador: encuesta.nombreFamiliarTrabajador,
@@ -1402,6 +1425,20 @@ class OperacionController extends ChangeNotifier {
         // En notificador, la ubicacion puede no existir en SQLite local.
         // No bloqueamos el flujo si el informe remoto ya fue enviado.
         _emitMessage('Informe enviado. Aviso local: no se pudo guardar la visita en cache (${e.getResultCode()}).');
+      }
+
+      // Actualizar el estado de la ubicación en Firestore a "completada"
+      final String? firestoreDocId = _firestoreDocIdPorUbicacionId[destino.id];
+      if (firestoreDocId != null && firestoreDocId.isNotEmpty) {
+        try {
+          await _firestoreService.updateLocationEstado(
+            ubicacionDocId: firestoreDocId,
+            estado: 'completada',
+          );
+        } catch (e) {
+          // Log pero no bloqueamos el flujo - el informe ya fue enviado
+          debugPrint('[Ubicacion Estado] Error al actualizar estado en Firestore: $e');
+        }
       }
 
       _emitMessage('Llegada registrada en U-${destino.id}. Informe PDF enviado al grupo.');
@@ -1466,11 +1503,13 @@ class OperacionController extends ChangeNotifier {
         _ubicacionesCompletadasPorReportes.isEmpty &&
         _ubicacionesEsperadasPorReportes.isEmpty &&
         _paradaDentroRadioLlegada.isEmpty &&
+        _firestoreDocIdPorUbicacionId.isEmpty &&
         _totalReportesRemotos == 0) {
       return;
     }
 
     _paradas.clear();
+    _firestoreDocIdPorUbicacionId.clear();
     _markersParadas = <Marker>{};
     _rutaIds.clear();
     _polylinesRuta = <Polyline>{};

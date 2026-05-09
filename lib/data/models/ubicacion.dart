@@ -7,6 +7,7 @@ class Ubicacion {
     this.direccion,
     this.descripcion,
     this.nombreUbicacion,
+    this.referenciaUbicacion,
     this.identificacionTecnica,
     this.razonSocial,
     this.ruc,
@@ -25,6 +26,7 @@ class Ubicacion {
   final String? direccion;
   final String? descripcion;
   final String? nombreUbicacion;
+  final String? referenciaUbicacion;
   final String? identificacionTecnica;
   final String? razonSocial;
   final String? ruc;
@@ -43,6 +45,7 @@ class Ubicacion {
     String? direccion,
     String? descripcion,
     String? nombreUbicacion,
+    String? referenciaUbicacion,
     String? identificacionTecnica,
     String? razonSocial,
     String? ruc,
@@ -61,6 +64,7 @@ class Ubicacion {
       direccion: direccion ?? this.direccion,
       descripcion: descripcion ?? this.descripcion,
       nombreUbicacion: nombreUbicacion ?? this.nombreUbicacion,
+      referenciaUbicacion: referenciaUbicacion ?? this.referenciaUbicacion,
       identificacionTecnica: identificacionTecnica ?? this.identificacionTecnica,
       razonSocial: razonSocial ?? this.razonSocial,
       ruc: ruc ?? this.ruc,
@@ -82,6 +86,7 @@ class Ubicacion {
       'direccion': direccion,
       'descripcion': descripcion,
       'nombre_ubicacion': nombreUbicacion,
+      'referencia_ubicacion': referenciaUbicacion,
       'identificacion_tecnica': identificacionTecnica,
       'razon_social': razonSocial,
       'ruc': ruc,
@@ -103,6 +108,7 @@ class Ubicacion {
       direccion: map['direccion'] as String?,
       descripcion: map['descripcion'] as String?,
       nombreUbicacion: map['nombre_ubicacion'] as String?,
+      referenciaUbicacion: map['referencia_ubicacion'] as String?,
       identificacionTecnica: map['identificacion_tecnica'] as String?,
       razonSocial: map['razon_social'] as String?,
       ruc: map['ruc'] as String?,

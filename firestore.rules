@@ -216,6 +216,7 @@ service cloud.firestore {
           'timestamp',
           'ubicacionId',
           'nombreUbicacion',
+          'referenciaUbicacion',
           'identificacionTecnica',
           'razonSocial',
           'ruc',
@@ -231,6 +232,8 @@ service cloud.firestore {
         && request.resource.data.timestamp is timestamp
         && (!('ubicacionId' in request.resource.data) || request.resource.data.ubicacionId is number)
         && (!('nombreUbicacion' in request.resource.data) || request.resource.data.nombreUbicacion is string)
+        && (!('referenciaUbicacion' in request.resource.data)
+          || request.resource.data.referenciaUbicacion is string)
         && (!('identificacionTecnica' in request.resource.data)
           || request.resource.data.identificacionTecnica in ['RPV', 'OPI', ''])
         && (!('razonSocial' in request.resource.data) || request.resource.data.razonSocial is string)
@@ -287,6 +290,7 @@ service cloud.firestore {
           'createdAt',
           'pdfBytes',
           'nombreUbicacion',
+          'referenciaUbicacion',
           'identificacionTecnica',
           'nombreFamiliarTrabajador',
           'cedulaFamiliarTrabajador',
@@ -324,6 +328,8 @@ service cloud.firestore {
         && (!('pdfStoragePath' in request.resource.data)
           || request.resource.data.pdfStoragePath is string)
         && (!('nombreUbicacion' in request.resource.data) || request.resource.data.nombreUbicacion is string)
+        && (!('referenciaUbicacion' in request.resource.data)
+          || request.resource.data.referenciaUbicacion is string)
         && (!('identificacionTecnica' in request.resource.data)
           || request.resource.data.identificacionTecnica in ['RPV', 'OPI', ''])
         && (!('nombreFamiliarTrabajador' in request.resource.data)

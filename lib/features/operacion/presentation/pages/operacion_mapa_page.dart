@@ -57,6 +57,7 @@ class _OperacionMapaPageState extends State<OperacionMapaPage> {
     _controller.setEncuestaLlegadaHandler(({
       required int paradaId,
       required double distanciaMetros,
+      String? referenciaUbicacion,
     }) {
       if (!mounted) {
         return Future<EncuestaLlegada?>.value(null);
@@ -65,6 +66,7 @@ class _OperacionMapaPageState extends State<OperacionMapaPage> {
         context: context,
         paradaId: paradaId,
         distanciaMetros: distanciaMetros,
+        referenciaUbicacion: referenciaUbicacion,
       );
     });
     _controller.setRegistroUbicacionHandler(({
@@ -85,6 +87,7 @@ class _OperacionMapaPageState extends State<OperacionMapaPage> {
       }
       return RegistroUbicacionData(
         nombreUbicacion: result.nombreUbicacion,
+        referenciaUbicacion: result.referenciaUbicacion,
         identificacionTecnica: result.identificacionTecnica,
         esSegundaNotificacion: result.esSegundaNotificacion,
         razonSocial: result.razonSocial,

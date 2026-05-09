@@ -230,12 +230,20 @@ class PanelControlWidget extends StatelessWidget {
                       margin: const EdgeInsets.only(bottom: 8),
                       child: ListTile(
                         leading: CircleAvatar(radius: 13, child: Text('${item.key + 1}')),
-                        title: Text('U-${parada.id}'),
-                        subtitle: Text(
-                          distancia == null
-                              ? 'Distancia no disponible'
-                              : '${distancia.toStringAsFixed(0)} m desde tu posicion',
-                        ),
+                          title: Text(
+                            parada.nombreUbicacion?.trim().isNotEmpty == true
+                                ? parada.nombreUbicacion!.trim()
+                                : 'U-${parada.id}',
+                          ),
+                          subtitle: Text(
+                            [
+                              if ((parada.referenciaUbicacion ?? '').trim().isNotEmpty)
+                                'Referencia: ${parada.referenciaUbicacion!.trim()}',
+                              distancia == null
+                                  ? 'Distancia no disponible'
+                                  : '${distancia.toStringAsFixed(0)} m desde tu posicion',
+                            ].join('\n'),
+                          ),
                         trailing: const Icon(Icons.navigation),
                         onTap: () => onTapParada(parada.id),
                       ),

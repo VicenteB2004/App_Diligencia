@@ -8,6 +8,7 @@ Future<EncuestaLlegada?> mostrarEncuestaLlegadaModal({
   required BuildContext context,
   required int paradaId,
   required double distanciaMetros,
+  String? referenciaUbicacion,
 }) {
   final bool esEscritorio = MediaQuery.of(context).size.width >= 720;
   if (esEscritorio) {
@@ -24,6 +25,7 @@ Future<EncuestaLlegada?> mostrarEncuestaLlegadaModal({
               child: _EncuestaLlegadaModal(
                 paradaId: paradaId,
                 distanciaMetros: distanciaMetros,
+                referenciaUbicacion: referenciaUbicacion,
               ),
             ),
           ),
@@ -43,6 +45,7 @@ Future<EncuestaLlegada?> mostrarEncuestaLlegadaModal({
       child: _EncuestaLlegadaModal(
         paradaId: paradaId,
         distanciaMetros: distanciaMetros,
+        referenciaUbicacion: referenciaUbicacion,
       ),
     ),
   );
@@ -52,10 +55,12 @@ class _EncuestaLlegadaModal extends StatefulWidget {
   const _EncuestaLlegadaModal({
     required this.paradaId,
     required this.distanciaMetros,
+    this.referenciaUbicacion,
   });
 
   final int paradaId;
   final double distanciaMetros;
+  final String? referenciaUbicacion;
 
   @override
   State<_EncuestaLlegadaModal> createState() => _EncuestaLlegadaModalState();
@@ -204,7 +209,7 @@ class _EncuestaLlegadaModalState extends State<_EncuestaLlegadaModal> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
+           children: <Widget>[
             Row(
               children: <Widget>[
                 const Icon(Icons.assignment_turned_in, size: 20),
@@ -218,6 +223,33 @@ class _EncuestaLlegadaModalState extends State<_EncuestaLlegadaModal> {
                 Text('${widget.distanciaMetros.toStringAsFixed(1)} m'),
               ],
             ),
+            if ((widget.referenciaUbicacion ?? '').trim().isNotEmpty) ...<Widget>[
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(
+                      'Referencia',
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      widget.referenciaUbicacion!.trim(),
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             DropdownButtonFormField<TipoNotificacion>(
               initialValue: _tipo,

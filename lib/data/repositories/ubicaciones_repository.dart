@@ -16,6 +16,7 @@ class UbicacionesRepository {
     String? direccion,
     String? descripcion,
     String? nombreUbicacion,
+    String? referenciaUbicacion,
     String? identificacionTecnica,
     String? razonSocial,
     String? ruc,
@@ -32,6 +33,7 @@ class UbicacionesRepository {
       direccion: direccion,
       descripcion: descripcion,
       nombreUbicacion: nombreUbicacion,
+      referenciaUbicacion: referenciaUbicacion,
       identificacionTecnica: identificacionTecnica,
       razonSocial: razonSocial,
       ruc: ruc,
@@ -69,6 +71,7 @@ class UbicacionesRepository {
           direccion: entrada.direccion,
           descripcion: entrada.descripcion,
           nombreUbicacion: entrada.nombreUbicacion,
+          referenciaUbicacion: entrada.referenciaUbicacion,
           identificacionTecnica: entrada.identificacionTecnica,
           razonSocial: entrada.razonSocial,
           ruc: entrada.ruc,
@@ -224,6 +227,7 @@ class NuevaUbicacionInput {
     this.direccion,
     this.descripcion,
     this.nombreUbicacion,
+    this.referenciaUbicacion,
     this.identificacionTecnica,
     this.razonSocial,
     this.ruc,
@@ -237,6 +241,7 @@ class NuevaUbicacionInput {
   final String? direccion;
   final String? descripcion;
   final String? nombreUbicacion;
+  final String? referenciaUbicacion;
   final String? identificacionTecnica;
   final String? razonSocial;
   final String? ruc;

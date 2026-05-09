@@ -59,9 +59,25 @@ service cloud.firestore {
     }
 
     match /usuarios/{uid} {
-      allow get: if signedIn() && request.auth.uid == uid;
+      allow get: if signedIn()
+        && (
+          request.auth.uid == uid ||
+          (
+            isAbogado()
+            && myGroupId() != ''
+            && dataGroupId(resource.data) == myGroupId()
+            && resource.data.rol == 'notificador'
+          )
+        );
 
-      allow list: if false;
+      // Allow listing usuarios only when the client query explicitly filters
+      // by the abogado's groupId and rol == 'notificador'. Using request.query
+      // ensures the query received from the client is constrained and safe.
+      allow list: if signedIn()
+        && isAbogado()
+        && myGroupId() != ''
+        && request.query.where('groupId', '==', myGroupId())
+        && request.query.where('rol', '==', 'notificador');
 
       allow create: if signedIn()
         && request.auth.uid == uid
@@ -75,40 +91,35 @@ service cloud.firestore {
         && request.resource.data.groupId == request.resource.data.grupo_id;
 
       allow update: if signedIn()
-        && request.auth.uid == uid
         && (
-          // Abogado puede actualizar su propio perfil
-          isAbogado() ||
-          // Notificador sin grupo puede unirse con codigo de invitacion valido
           (
-            isNotificador()
-            && request.resource.data.groupId is string
-            && request.resource.data.groupId.size() > 0
-            && request.resource.data.joinCode is string
-            && request.resource.data.joinCode.size() > 0
-            && invitacionValidaParaJoin(request.resource.data.joinCode)
-            && get(invitacionPath(request.resource.data.joinCode)).data.groupId == request.resource.data.groupId
-          )
-        );
-
-      allow create: if signedIn()
-        && request.auth.uid == uid
-        && request.resource.data.keys().hasAll(['uid', 'email', 'rol', 'groupId', 'grupo_id'])
-        && request.resource.data.keys().hasOnly(['uid', 'email', 'rol', 'groupId', 'grupo_id', 'nombre', 'joinCode'])
-        && request.resource.data.uid == uid
-        && request.resource.data.email is string
-        && request.resource.data.rol in ['abogado', 'notificador']
-        && request.resource.data.groupId is string
-        && request.resource.data.grupo_id is string
-        && request.resource.data.groupId == request.resource.data.grupo_id
-        && (
-          isAbogado() ||
+            request.auth.uid == uid
+            && (
+              // Abogado puede actualizar su propio perfil
+              isAbogado() ||
+              // Notificador sin grupo puede unirse con codigo de invitacion valido
+              (
+                isNotificador()
+                && request.resource.data.groupId is string
+                && request.resource.data.groupId.size() > 0
+                && request.resource.data.joinCode is string
+                && request.resource.data.joinCode.size() > 0
+                && invitacionValidaParaJoin(request.resource.data.joinCode)
+                && get(invitacionPath(request.resource.data.joinCode)).data.groupId == request.resource.data.groupId
+              )
+            )
+          ) ||
           (
-            isNotificador()
-            && request.resource.data.joinCode is string
-            && request.resource.data.joinCode.size() > 0
-            && invitacionValidaParaJoin(request.resource.data.joinCode)
-            && get(invitacionPath(request.resource.data.joinCode)).data.groupId == request.resource.data.groupId
+            isAbogado()
+            && myGroupId() != ''
+            && dataGroupId(resource.data) == myGroupId()
+            && resource.data.rol == 'notificador'
+            && request.resource.data.uid == resource.data.uid
+            && request.resource.data.email == resource.data.email
+            && request.resource.data.rol == resource.data.rol
+            && request.resource.data.groupId == ''
+            && request.resource.data.grupo_id == ''
+            && request.resource.data.diff(resource.data).changedKeys().hasOnly(['groupId', 'grupo_id'])
           )
         );
 
@@ -152,7 +163,14 @@ service cloud.firestore {
         && request.resource.data.estado == 'activa';
 
       allow get: if signedIn();
-      allow list: if false;
+      // Allow listing invitaciones_grupo when the client query explicitly
+      // filters by the abogado's groupId. We don't require the creator to be
+      // the same abogado so abogados can see all invitations used in their
+      // group (useful when multiple abogados manage the same group).
+      allow list: if signedIn()
+        && isAbogado()
+        && myGroupId() != ''
+        && request.query.where('groupId', '==', myGroupId());
 
       // Abogado creador puede anular invitacion manualmente.
       allow update: if signedIn()

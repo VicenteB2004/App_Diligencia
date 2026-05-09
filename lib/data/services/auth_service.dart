@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:notificador/data/models/app_user.dart';
+import 'package:notificador/data/models/grupo_notificador.dart';
 
 class AuthService {
   AuthService({FirebaseAuth? auth, FirebaseFirestore? firestore})
@@ -426,6 +427,217 @@ class AuthService {
     }
 
     return AppUser(uid: appUser.uid, email: appUser.email, rol: appUser.rol, groupId: groupId);
+  }
+
+  Stream<List<GrupoNotificador>> streamNotificadoresByCurrentUserGroup() async* {
+    final AppUser appUser = await _requireCurrentAppUser();
+    final String groupId = appUser.groupId.trim();
+    if (groupId.isEmpty) {
+      throw const AuthServiceException('Tu usuario no tiene grupo asignado.');
+    }
+
+    // List all invitations for the group (not only those created by this abogado).
+    // We will resolve usedByUid across all invitations so the abogado sees all
+    // notificadores that joined the same group.
+    yield* _firestore
+        .collection(invitacionesCollection)
+        .where('groupId', isEqualTo: groupId)
+        .snapshots()
+        .asyncMap((QuerySnapshot<Map<String, dynamic>> snapshot) async {
+          final Map<String, String> uidsPorCodigo = <String, String>{};
+          for (final QueryDocumentSnapshot<Map<String, dynamic>> doc in snapshot.docs) {
+            final Map<String, dynamic> data = doc.data();
+            final String usedByUid = (data['usedByUid'] as String? ?? '').trim();
+            final String estado = (data['estado'] as String? ?? '').trim().toLowerCase();
+            if (usedByUid.isEmpty || estado == 'activa') {
+              continue;
+            }
+            uidsPorCodigo[doc.id] = usedByUid;
+          }
+
+          final List<GrupoNotificador> notificadores = <GrupoNotificador>[];
+          final Set<String> uidsProcesados = <String>{};
+          for (final MapEntry<String, String> entry in uidsPorCodigo.entries) {
+            final String uid = entry.value.trim();
+            if (uid.isEmpty || !uidsProcesados.add(uid)) {
+              continue;
+            }
+
+            try {
+              final DocumentSnapshot<Map<String, dynamic>> userSnap = await _getUserSnapshotWithRetry(uid);
+              if (!userSnap.exists || userSnap.data() == null) {
+                continue;
+              }
+
+              final Map<String, dynamic> userData = Map<String, dynamic>.from(userSnap.data()!);
+              final String role = (userData['rol'] as String? ?? '').trim().toLowerCase();
+              final String notifierGroupId =
+                  (userData['groupId'] as String? ?? userData['grupo_id'] as String? ?? userData['group_id'] as String? ?? '')
+                      .trim();
+              if (role != 'notificador' || notifierGroupId != groupId) {
+                continue;
+              }
+
+              final String email = (userData['email'] as String? ?? '').trim();
+              if (email.isEmpty) {
+                continue;
+              }
+              final String nombre = (userData['nombre'] as String? ?? '').trim();
+              final String codigo = entry.key.trim();
+
+              notificadores.add(
+                GrupoNotificador(
+                  uid: uid,
+                  email: email,
+                  nombre: nombre.isEmpty ? email.split('@').first : nombre,
+                  groupId: groupId,
+                  joinCode: codigo.isEmpty ? null : codigo,
+                ),
+              );
+            } catch (_) {
+              // Si un perfil no se puede leer, seguimos con el resto.
+            }
+          }
+
+          notificadores.sort((GrupoNotificador a, GrupoNotificador b) {
+            final String nombreA = a.nombre.toLowerCase();
+            final String nombreB = b.nombre.toLowerCase();
+            final int nombreCompare = nombreA.compareTo(nombreB);
+            if (nombreCompare != 0) {
+              return nombreCompare;
+            }
+            return a.email.toLowerCase().compareTo(b.email.toLowerCase());
+          });
+          return notificadores;
+        });
+  }
+
+  Future<List<GrupoNotificador>> getNotificadoresByCurrentUserGroup() async {
+    final AppUser appUser = await _requireCurrentAppUser();
+    final String groupId = appUser.groupId.trim();
+    if (groupId.isEmpty) {
+      throw const AuthServiceException('Tu usuario no tiene grupo asignado.');
+    }
+
+    try {
+      // Query all invitations for the group (not restricted to creador)
+      final QuerySnapshot<Map<String, dynamic>> snapshot = await _firestore
+          .collection(invitacionesCollection)
+          .where('groupId', isEqualTo: groupId)
+          .get();
+
+      final List<GrupoNotificador> notificadores = <GrupoNotificador>[];
+      final Set<String> uidsProcesados = <String>{};
+      for (final QueryDocumentSnapshot<Map<String, dynamic>> doc in snapshot.docs) {
+        final Map<String, dynamic> data = doc.data();
+        final String usedByUid = (data['usedByUid'] as String? ?? '').trim();
+        final String estado = (data['estado'] as String? ?? '').trim().toLowerCase();
+        if (usedByUid.isEmpty || estado == 'activa' || !uidsProcesados.add(usedByUid)) {
+          continue;
+        }
+
+        try {
+          final DocumentSnapshot<Map<String, dynamic>> userSnap = await _getUserSnapshotWithRetry(usedByUid);
+          if (!userSnap.exists || userSnap.data() == null) {
+            continue;
+          }
+
+          final Map<String, dynamic> userData = Map<String, dynamic>.from(userSnap.data()!);
+          final String role = (userData['rol'] as String? ?? '').trim().toLowerCase();
+          final String notifierGroupId =
+              (userData['groupId'] as String? ?? userData['grupo_id'] as String? ?? userData['group_id'] as String? ?? '')
+                  .trim();
+          if (role != 'notificador' || notifierGroupId != groupId) {
+            continue;
+          }
+
+          final String email = (userData['email'] as String? ?? '').trim();
+          if (email.isEmpty) {
+            continue;
+          }
+          final String nombre = (userData['nombre'] as String? ?? '').trim();
+
+          notificadores.add(
+            GrupoNotificador(
+              uid: usedByUid,
+              email: email,
+              nombre: nombre.isEmpty ? email.split('@').first : nombre,
+              groupId: groupId,
+              joinCode: doc.id,
+            ),
+          );
+        } catch (_) {
+          // Ignora perfiles que no se puedan resolver.
+        }
+      }
+      notificadores.sort((GrupoNotificador a, GrupoNotificador b) {
+        final String nombreA = a.nombre.toLowerCase();
+        final String nombreB = b.nombre.toLowerCase();
+        final int nombreCompare = nombreA.compareTo(nombreB);
+        if (nombreCompare != 0) {
+          return nombreCompare;
+        }
+        return a.email.toLowerCase().compareTo(b.email.toLowerCase());
+      });
+      return notificadores;
+    } on FirebaseException catch (e) {
+      throw AuthServiceException(
+        e.message ?? 'No fue posible consultar los notificadores del grupo.',
+        code: e.code,
+      );
+    }
+  }
+
+  Future<void> expulsarNotificadorDelGrupo(String uidNotificador) async {
+    final String uid = uidNotificador.trim();
+    if (uid.isEmpty) {
+      throw const AuthServiceException('El uid del notificador es invalido.');
+    }
+
+    final AppUser abogado = await _requireCurrentAppUser();
+    if (abogado.rol != UserRole.abogado) {
+      throw const AuthServiceException('Solo el abogado puede expulsar notificadores del grupo.');
+    }
+    final String groupId = abogado.groupId.trim();
+    if (groupId.isEmpty) {
+      throw const AuthServiceException('Tu usuario no tiene grupo asignado.');
+    }
+
+    final DocumentReference<Map<String, dynamic>> userRef = _firestore
+        .collection(usuariosCollection)
+        .doc(uid);
+
+    try {
+      final DocumentSnapshot<Map<String, dynamic>> snapshot = await userRef.get();
+      if (!snapshot.exists || snapshot.data() == null) {
+        throw const AuthServiceException('No se encontro el notificador a expulsar.');
+      }
+
+      final Map<String, dynamic> data = snapshot.data()!;
+      final String role = (data['rol'] as String? ?? '').trim().toLowerCase();
+      final String targetGroupId =
+          (data['groupId'] as String? ?? data['grupo_id'] as String? ?? data['group_id'] as String? ?? '')
+              .trim();
+      if (role != 'notificador') {
+        throw const AuthServiceException('Solo puedes expulsar notificadores.');
+      }
+      if (targetGroupId != groupId) {
+        throw const AuthServiceException('Ese notificador no pertenece a tu grupo.');
+      }
+
+      await userRef.set(
+        <String, dynamic>{
+          'groupId': '',
+          'grupo_id': '',
+        },
+        SetOptions(merge: true),
+      );
+    } on FirebaseException catch (e) {
+      throw AuthServiceException(
+        e.message ?? 'No fue posible expulsar al notificador del grupo.',
+        code: e.code,
+      );
+    }
   }
 
   Future<AppUser> _requireCurrentAppUser() async {

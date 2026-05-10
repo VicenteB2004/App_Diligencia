@@ -116,6 +116,7 @@ class OperacionController extends ChangeNotifier {
   LatLng? _miUbicacion;
   late final RolApp _rolActivo = usuarioActual.rol;
   bool _modoMarcadoEnMapa = false;
+  bool _modoEliminarParada = false;
   String _destinoBusqueda = '';
   LatLng? _puntoBusquedaActual;
   String? _descripcionBusquedaActual;
@@ -145,6 +146,7 @@ class OperacionController extends ChangeNotifier {
   LatLng? get miUbicacion => _miUbicacion;
   RolApp get rolActivo => _rolActivo;
   bool get modoMarcadoEnMapa => _modoMarcadoEnMapa;
+  bool get modoEliminarParada => _modoEliminarParada;
   String get destinoBusqueda => _destinoBusqueda;
   LatLng? get puntoBusquedaActual => _puntoBusquedaActual;
   String? get descripcionBusquedaActual => _descripcionBusquedaActual;
@@ -519,6 +521,22 @@ class OperacionController extends ChangeNotifier {
 
   void cambiarModoMarcado(bool activo) {
     _modoMarcadoEnMapa = activo;
+
+    if (activo) {
+      _modoEliminarParada = false;
+    }
+
+    _safeNotify();
+  }
+
+  void cambiarModoEliminarParada(bool activo) {
+    _modoEliminarParada = activo;
+
+    // evita que ambos modos estén activos
+    if (activo) {
+      _modoMarcadoEnMapa = false;
+    }
+
     _safeNotify();
   }
 
@@ -758,6 +776,47 @@ class OperacionController extends ChangeNotifier {
     return true;
   }
 
+  Future<void> eliminarParadaIndividual(int ubicacionId) async {
+    if (!esAbogado) {
+      _emitMessage('Solo el abogado puede eliminar ubicaciones.');
+      return;
+    }
+
+    final Parada? parada = _paradas[ubicacionId];
+
+    if (parada == null) {
+      _emitMessage('La parada no existe.');
+      return;
+    }
+
+    try {
+      final String? firestoreDocId =
+          _firestoreDocIdPorUbicacionId[ubicacionId];
+
+      if (firestoreDocId != null) {
+        await _firestoreService.deleteLocationByDocId(firestoreDocId);
+      }
+
+      await _ubicacionesRepository.borrarUbicacion(ubicacionId);
+
+      _paradas.remove(ubicacionId);
+      _firestoreDocIdPorUbicacionId.remove(ubicacionId);
+      _ubicacionesCompletadasPorReportes.remove(ubicacionId);
+      _ubicacionesEsperadasPorReportes.remove(ubicacionId);
+      _paradaDentroRadioLlegada.remove(ubicacionId);
+
+      _reconstruirMarkersParadas();
+
+      await recalcularRuta();
+
+      _safeNotify();
+
+      _emitMessage('Parada eliminada correctamente.');
+    } catch (e) {
+      _emitMessage('Error eliminando parada: $e');
+    }
+  }
+
   Future<void> limpiarParadas() async {
     if (!esAbogado) {
       _emitMessage('Solo el abogado puede limpiar ubicaciones.');
@@ -947,6 +1006,11 @@ class OperacionController extends ChangeNotifier {
         markerId: MarkerId('U-${parada.id}'),
         position: parada.posicion,
         icon: color,
+        onTap: () async {
+          if (_modoEliminarParada) {
+            await eliminarParadaIndividual(parada.id);
+          }
+        },
         infoWindow: InfoWindow(
           title: parada.nombreUbicacion?.trim().isNotEmpty == true
               ? parada.nombreUbicacion!.trim()

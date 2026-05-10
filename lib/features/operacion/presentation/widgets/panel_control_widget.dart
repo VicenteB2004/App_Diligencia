@@ -12,8 +12,10 @@ class PanelControlWidget extends StatelessWidget {
     required this.rutaIds,
     required this.paradas,
     required this.modoMarcadoEnMapa,
+    required this.modoEliminarParada,
     required this.distanciaDesdeMiPosicion,
     required this.onModoMarcadoChanged,
+    required this.onModoEliminarChanged,
     required this.onLimpiar,
     required this.onOptimizarRuta,
     required this.onCentrar,
@@ -32,9 +34,11 @@ class PanelControlWidget extends StatelessWidget {
   final List<int> rutaIds;
   final Map<int, Parada> paradas;
   final bool modoMarcadoEnMapa;
+  final bool modoEliminarParada;
   final double? Function(int paradaId) distanciaDesdeMiPosicion;
 
   final ValueChanged<bool> onModoMarcadoChanged;
+  final ValueChanged<bool> onModoEliminarChanged;
   final VoidCallback onLimpiar;
   final VoidCallback onOptimizarRuta;
   final VoidCallback onCentrar;
@@ -180,6 +184,21 @@ class PanelControlWidget extends StatelessWidget {
                     onSelected: onModoMarcadoChanged,
                     selectedColor: Colors.indigo.withValues(alpha: 0.18),
                   ),
+                  if (esAbogado)
+                    FilterChip(
+                      avatar: Icon(
+                        modoEliminarParada ? Icons.delete : Icons.delete_outline,
+                        size: 18,
+                      ),
+                      label: Text(
+                        modoEliminarParada
+                            ? 'Eliminar una parada: ON'
+                            : 'Eliminar una parada: OFF',
+                      ),
+                      selected: modoEliminarParada,
+                      onSelected: onModoEliminarChanged,
+                      selectedColor: Colors.red.withValues(alpha: 0.18),
+                    ),
                 if (esAbogado)
                   FilledButton.tonalIcon(
                     onPressed: onLimpiar,

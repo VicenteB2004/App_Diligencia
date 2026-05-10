@@ -584,8 +584,10 @@ class _OperacionMapaPageState extends State<OperacionMapaPage> {
       rutaIds: _controller.rutaIds,
       paradas: _controller.paradas,
       modoMarcadoEnMapa: _controller.modoMarcadoEnMapa,
+      modoEliminarParada: _controller.modoEliminarParada,
       distanciaDesdeMiPosicion: _controller.distanciaDesdeMiPosicion,
       onModoMarcadoChanged: _controller.cambiarModoMarcado,
+      onModoEliminarChanged: _controller.cambiarModoEliminarParada,
       onLimpiar: () {
         unawaited(_controller.limpiarParadas());
       },

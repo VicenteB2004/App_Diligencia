@@ -212,6 +212,25 @@ class UbicacionesRepository {
     });
   }
 
+  Future<void> borrarUbicacion(int ubicacionId) async {
+    final Database db = await _dbHelper.database;
+
+    await db.transaction<void>((Transaction txn) async {
+
+      await txn.delete(
+        DatabaseHelper.tablaUbicaciones,
+        where: 'id  = ?',
+        whereArgs: <Object>[ubicacionId],
+      );
+
+      await txn.delete(
+        DatabaseHelper.tablaUbicaciones,
+        where: 'id = ?',
+        whereArgs: <Object>[ubicacionId],
+      );
+    });
+  }
+
   String _formatDate(DateTime dt) {
     return '${dt.year.toString().padLeft(4, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
   }

@@ -236,6 +236,28 @@ class FirestoreService {
     }
   }
 
+  Future<void> deleteLocationByDocId(String docId) async {
+    final String normalizedId = docId.trim();
+
+    if (normalizedId.isEmpty) {
+      throw const FirestoreServiceException(
+        'El ID de ubicación es inválido.',
+      );
+    }
+
+    try {
+      await _firestore
+          .collection(ubicacionesCollection)
+          .doc(normalizedId)
+          .delete();
+    } on FirebaseException catch (e) {
+      throw FirestoreServiceException(
+        e.message ?? 'No fue posible eliminar la ubicación.',
+        code: e.code,
+      );
+    }
+  }
+
   List<GroupLocation> _mapGroupLocationsSafely(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
   ) {
